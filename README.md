@@ -1,5 +1,6 @@
 # TopCV-scraper
-A script to scrape jobs data from TopCV.vn
+Lấy dữ liệu các công việc từ web TopCV.vn
+A script to scrape/crawl jobs data from TopCV.vn
 
 # ENGLISH BELLOW
 ___________________________________
