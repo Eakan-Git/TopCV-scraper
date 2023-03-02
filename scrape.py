@@ -3,8 +3,12 @@ import time
 from bs4 import BeautifulSoup
 import csv
 import re
+import pandas as pd
+import sys
+
 headers = {"User-Agent": "Mozilla/5.0 (X11; CrOS x86_64 12871.102.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.141 Safari/537.36"}
 timeout = 10
+
 def scrape_job(job_link):
 	job_response = requests.get(job_link, headers=headers, timeout=timeout)
 	if job_response.status_code != 200:
@@ -73,18 +77,18 @@ def scrape_job(job_link):
 		# 	contents = re.split(delimiters, value)
 		# 	contents = [contents.strip() for content in contents if contents.strip()]
 		# 	job_details[key] = contents
-		job_data = []
-		job_data.append({
-			'title': job_title,
-			'job_link': job_link,
-			'company_link': company_link,
-			'company': company_title,
-			'deadline': deadline,
-			'overview': info_data,
-			'addresses': addresses,
-			'skills': skills_data,
-			'job_details': job_details
-		})
+		# job_data = []
+		# job_data.append({
+		# 	'title': job_title,
+		# 	'job_link': job_link,
+		# 	'company_link': company_link,
+		# 	'company': company_title,
+		# 	'deadline': deadline,
+		# 	'overview': info_data,
+		# 	'addresses': addresses,
+		# 	'skills': skills_data,
+		# 	'job_details': job_details
+		# })
 		#print(job_data)
 		fieldnames = ["title", "job_link", "company_link", "company", "deadline", "overview", "addresses", "skills", "job_details"]
 
@@ -117,13 +121,45 @@ def scrape(url):
 				except:
 					print(f"Failed to scrape the job! - {job_link}")
 
+def clean_up():
+	df = pd.read_csv('jobs_data.csv')
+	df.drop_duplicates().to_csv("jobs_data.csv", index=False)
 
-url = 'https://www.topcv.vn/tim-viec-lam-moi-nhat'
-page = 1
-while True:
-	if page == 401:
-		break
-	scrape(url + f'?page={page}')
-	print(page)
-	page += 1
-	time.sleep(3)
+def main():
+	args = sys.argv[1:]
+	if len(args) == 2 and int(args[0]) <= int(args[1]):
+		url = 'https://www.topcv.vn/tim-viec-lam-moi-nhat'
+		page = int(args[0])
+		flag = int(args[1])
+		print(f"======================Start scraping from page 1 to page {flag}.======================")
+		while True:
+			if page > flag:
+				break
+			scrape(url + f'?page={page}')
+			print(f'Scraped page: {page}')
+			page += 1
+			time.sleep(3)
+		clean_up()
+		print("Done!")
+		return
+	if len(args) == 0:
+		url = 'https://www.topcv.vn/tim-viec-lam-moi-nhat'
+		page = 1
+		page_response = requests.get(url, headers=headers, timeout=timeout)
+		page_soup = BeautifulSoup(page_response.text, "html.parser")
+		flag = int(page_soup.find("ul", {"class":"pagination"}).find_all("li")[-2].text)
+		print(f"======================Start scraping from page 1 to page {flag}.======================")
+		while True:
+			if page > flag:
+				break
+			scrape(url + f'?page={page}')
+			print(f'Scraped page: {page}')
+			page += 1
+			time.sleep(3)
+		clean_up()
+		print("Done!")
+		return
+	else:
+		print("Wrong arguments")
+
+main()
